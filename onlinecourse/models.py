@@ -101,7 +101,7 @@ class Enrollment(models.Model):
 class Question(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     content = models.CharField(max_length=200)
-    grade = models.IntegerField(default=0)
+    grade = models.IntegerField(default=50)
 
     def __str__(self):
         return f"Question: {self.content}"
