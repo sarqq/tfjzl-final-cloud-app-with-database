@@ -1,5 +1,12 @@
+"""
+Django app development w/SQL and databases - Final Project
+
+Task 1: Create Question, Choice and Submission models for course exams
+"""
+
 import sys
 from django.utils.timezone import now
+
 try:
     from django.db import models
 except Exception:
@@ -25,10 +32,6 @@ class Instructor(models.Model):
 
 # Learner model
 class Learner(models.Model):
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-    )
     STUDENT = 'student'
     DEVELOPER = 'developer'
     DATA_SCIENTIST = 'data_scientist'
@@ -39,6 +42,8 @@ class Learner(models.Model):
         (DATA_SCIENTIST, 'Data Scientist'),
         (DATABASE_ADMIN, 'Database Admin')
     ]
+    
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,)
     occupation = models.CharField(
         null=False,
         max_length=20,
@@ -48,8 +53,7 @@ class Learner(models.Model):
     social_link = models.URLField(max_length=200)
 
     def __str__(self):
-        return self.user.username + "," + \
-               self.occupation
+        return f"{self.user.username} {self.occupation}"
 
 
 # Course model
@@ -88,16 +92,40 @@ class Enrollment(models.Model):
         (HONOR, 'Honor'),
         (BETA, 'BETA')
     ]
+
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     date_enrolled = models.DateField(default=now)
     mode = models.CharField(max_length=5, choices=COURSE_MODES, default=AUDIT)
     rating = models.FloatField(default=5.0)
 
+# Task 1: Question model
+class Question(models.Model):
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    content = models.CharField(max_length=200)
+    grade = models.IntegerField(default=0)
 
-# One enrollment could have multiple submission
-# One submission could have multiple choices
-# One choice could belong to multiple submissions
-#class Submission(models.Model):
-#    enrollment = models.ForeignKey(Enrollment, on_delete=models.CASCADE)
-#    choices = models.ManyToManyField(Choice)
+    def __str__(self):
+        return f"Question: {self.content}"
+
+    def get_score(self, ids):
+        """
+        Get question score for student by student id
+        For the record, I think this pre-made logic is poorly thought out
+        """
+        all_answers = self.choice_set.filter(is_correct=True).count()
+        correct_answers = self.choice_set.filter(is_correct=True, id__in=ids).count()
+
+        return True if all_answers == correct_answers else False
+
+# Task 1: Choice model
+class Choice(models.Model):
+    question = models.ForeignKey(Question, on_delete=models.CASCADE)
+    content = models.CharField(max_length=200)
+    correct = models.BooleanField(default=False)
+
+
+# Task 1: Submission model
+class Submission(models.Model):
+    enrollment = models.ForeignKey(Enrollment, on_delete=models.CASCADE)
+    choices = models.ManyToManyField(Choice)
